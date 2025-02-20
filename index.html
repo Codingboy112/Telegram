@@ -18,54 +18,5 @@
     </div>
 </body>
 </html>
+<script src="app.js"></script>
 
-<script type="module">
-
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyD905fp3RJppTtSBamEp1vVX_lhgYffIsw",
-        authDomain: "testing-e4a6d.firebaseapp.com",
-        projectId: "testing-e4a6d",
-        storageBucket: "testing-e4a6d.appspot.com",
-        messagingSenderId: "730001380225",
-        appId: "1:730001380225:web:5a22a4cd080ede067d8e80"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const usernameInput = document.getElementById("usernameInput");
-    const messageInput = document.getElementById("messageInput");
-    const sendButton = document.getElementById("sendButton");
-    const messagesContainer = document.getElementById("messagesContainer");
-
-    async function sendMessage() {
-        const username = usernameInput.value.trim();
-        const text = messageInput.value.trim();
-        if (!username || !text) return;
-
-        await addDoc(collection(db, "messages"), {
-            username: username,
-            text: text,
-            timestamp: new Date()
-        });
-
-        messageInput.value = "";
-    }
-
-    sendButton.addEventListener("click", sendMessage);
-
-    const messagesQuery = query(collection(db, "messages"), orderBy("timestamp"));
-    onSnapshot(messagesQuery, (snapshot) => {
-        messagesContainer.innerHTML = "";
-        snapshot.forEach((doc) => {
-            const messageData = doc.data();
-            const messageElement = document.createElement("div");
-            messageElement.classList.add("message");
-            messageElement.innerHTML = `<strong>${messageData.username}:</strong> ${messageData.text}`;
-            messagesContainer.appendChild(messageElement);
-        });
-    });
-</script>

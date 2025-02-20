@@ -1,68 +1,67 @@
-// ✅ Initialize Firebase using Firebase 8 syntax (no import/export needed)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { 
+    getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
 const firebaseConfig = {
     apiKey: "AIzaSyD905fp3RJppTtSBamEp1vVX_lhgYffIsw",
     authDomain: "testing-e4a6d.firebaseapp.com",
     projectId: "testing-e4a6d",
     storageBucket: "testing-e4a6d.appspot.com",
     messagingSenderId: "730001380225",
-    appId: "1:730001380225:web:5a22a4cd080ede067d8e80",
-    measurementId: "G-XQ0F3X4DR4"
-  };
-  
-  // ✅ Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  
-  // ✅ Get references to HTML elements
-  const messageInput = document.getElementById("messageInput");
-  const sendButton = document.getElementById("sendButton");
-  const messagesContainer = document.getElementById("messagesContainer");
-  
-  // ✅ Function to send a message
-  function sendMessage() {
+    appId: "1:730001380225:web:5a22a4cd080ede067d8e80"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const usernameInput = document.getElementById("usernameInput");
+const messageInput = document.getElementById("messageInput");
+const sendButton = document.getElementById("sendButton");
+const messagesContainer = document.getElementById("messagesContainer");
+
+// Function to send a message
+async function sendMessage() {
+    const username = usernameInput.value.trim();
     const text = messageInput.value.trim();
-    if (text === "") return;
-  
-    db.collection("messages").add({
-      text: text,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(() => {
-      messageInput.value = ""; // Clear input after sending
-    }).catch((error) => {
-      console.error("Error sending message:", error);
+    if (!username || !text) return;
+
+    await addDoc(collection(db, "messages"), {
+        username: username,
+        text: text,
+        timestamp: new Date()
     });
-  }
-  
-  // ✅ Function to delete a message
-  function deleteMessage(id) {
-    db.collection("messages").doc(id).delete().catch((error) => {
-      console.error("Error deleting message:", error);
-    });
-  }
-  
-  // ✅ Listen for real-time updates and display messages
-  db.collection("messages").orderBy("timestamp").onSnapshot((snapshot) => {
-    messagesContainer.innerHTML = ""; // Clear messages before reloading them
+
+    messageInput.value = "";
+}
+
+// Function to delete a message
+window.deleteMessage = async function (id) { // Expose globally
+    await deleteDoc(doc(db, "messages", id));
+}
+
+// Listen for real-time updates
+const messagesQuery = query(collection(db, "messages"), orderBy("timestamp"));
+onSnapshot(messagesQuery, (snapshot) => {
+    messagesContainer.innerHTML = "";
     snapshot.forEach((doc) => {
-      const messageData = doc.data();
-      const messageElement = document.createElement("div");
-  
-      // Create message content
-      const textElement = document.createElement("p");
-      textElement.textContent = messageData.text;
-  
-      // Create delete button
-      const deleteButton = document.createElement("button");
-      deleteButton.textContent = "Delete";
-      deleteButton.addEventListener("click", () => deleteMessage(doc.id));
-  
-      // Append elements
-      messageElement.appendChild(textElement);
-      messageElement.appendChild(deleteButton);
-      messagesContainer.appendChild(messageElement);
+        const messageData = doc.data();
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("message");
+
+        let messageContent = `<strong>${messageData.username}:</strong> ${messageData.text}`;
+
+        // If the message is an image URL, display it as an image
+        if (messageData.text.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
+            messageContent = `<strong>${messageData.username}:</strong><br><img src="${messageData.text}" alt="Image" class="chat-image">`;
+        }
+
+        messageElement.innerHTML = `
+            ${messageContent}
+            <button class="delete-btn" onclick="deleteMessage('${doc.id}')">❌</button>
+        `;
+        messagesContainer.appendChild(messageElement);
     });
-  });
-  
-  // ✅ Attach event listener to send button
-  sendButton.addEventListener("click", sendMessage);
-  
+});
+
+sendButton.addEventListener("click", sendMessage);
